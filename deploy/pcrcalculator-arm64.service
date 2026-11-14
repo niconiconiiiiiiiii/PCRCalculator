@@ -1,0 +1,24 @@
+[Unit]
+Description=PCRCalculator Linux ARM64 API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=pcrcalculator
+Group=pcrcalculator
+WorkingDirectory=/opt/pcrcalculator
+Environment=PCRCALC_PERSISTENT_DATA_PATH=/var/lib/pcrcalculator
+Environment=DOTNET_BUNDLE_EXTRACT_BASE_DIR=/var/cache/pcrcalculator/bundle
+ExecStart=/opt/pcrcalculator/PCRCalculatorServer --server --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+StateDirectory=pcrcalculator
+CacheDirectory=pcrcalculator
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

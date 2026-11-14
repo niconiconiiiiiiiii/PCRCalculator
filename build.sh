@@ -19,7 +19,7 @@ usage() {
 Usage: ./build.sh [options]
 
 Options:
-  --target <all|windows|linux|android|windows,linux,android>
+  --target <all|windows|linux|linux-arm64|android|windows,linux,android>
   --unity <path-to-unity>
   --output-root <dir>
   --android-format <apk|aab>
@@ -111,8 +111,10 @@ done
 
 # Server-only invocation needs .NET/Python, not Unity; Editor mixed builds share this helper.
 case "$TARGET" in
-  linux|linux64)
-    server_args=(--target linux --output-root "$OUTPUT_ROOT")
+  linux|linux64|linux-arm64)
+    server_target="linux"
+    [[ "$TARGET" != linux-arm64 ]] || server_target="linux-arm64"
+    server_args=(--target "$server_target" --output-root "$OUTPUT_ROOT")
     [[ "$SERVER_SELF_CONTAINED" == true ]] || server_args+=(--framework-dependent)
     [[ "$ZIP_DESKTOP_BUILDS" == true ]] || server_args+=(--no-zip)
     python3 "$PROJECT_ROOT/scripts/build_server.py" "${server_args[@]}"

@@ -9,13 +9,13 @@ import tempfile
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--target', choices=['linux', 'macos-server'], required=True)
+    parser.add_argument('--target', choices=['linux', 'linux-arm64', 'macos-server'], required=True)
     parser.add_argument('--output-root', type=Path, required=True)
     parser.add_argument('--framework-dependent', action='store_true')
     parser.add_argument('--no-zip', action='store_true')
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
-    folder, runtime = {'linux': ('Linux', 'linux-x64'), 'macos-server': ('MacOSServer', 'osx-arm64')}[args.target]
+    folder, runtime = {'linux': ('Linux', 'linux-x64'), 'linux-arm64': ('LinuxARM64', 'linux-arm64'), 'macos-server': ('MacOSServer', 'osx-arm64')}[args.target]
     output = args.output_root.resolve()
     output.mkdir(parents=True, exist_ok=True)
     # A fresh publish prevents stale files (including databases/saves) entering a new package.

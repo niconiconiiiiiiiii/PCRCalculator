@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.vs
+Library
+Temp
+Logs
+Builds
+UserSettings
+**/bin
+**/obj
+**/.DS_Store
+**/*.db
+**/存档.json

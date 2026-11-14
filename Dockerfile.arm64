@@ -1,0 +1,23 @@
+# Build with: docker build --platform linux/arm64 -f Dockerfile.arm64 -t pcrcalculator:arm64 .
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
+ARG TARGETARCH
+WORKDIR /src
+COPY . .
+RUN test "$TARGETARCH" = "arm64" && dotnet publish PCRCalculatorServer/PCRCalculatorServer.csproj \
+    -c Release -r linux-arm64 --self-contained true \
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+    -o /app/publish
+
+FROM --platform=linux/arm64 mcr.microsoft.com/dotnet/runtime-deps:8.0-noble
+RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-0 libgomp1 ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r pcr && useradd -r -g pcr -d /app pcr \
+    && mkdir -p /data /app /tmp/pcr-bundle && chown -R pcr:pcr /data /app /tmp/pcr-bundle
+WORKDIR /app
+COPY --from=build --chown=pcr:pcr /app/publish/ ./
+USER pcr
+ENV PCRCALC_PERSISTENT_DATA_PATH=/data \
+    DOTNET_BUNDLE_EXTRACT_BASE_DIR=/tmp/pcr-bundle
+EXPOSE 8080
+VOLUME ["/data"]
+ENTRYPOINT ["./PCRCalculatorServer", "--server", "--host", "0.0.0.0", "--port", "8080"]

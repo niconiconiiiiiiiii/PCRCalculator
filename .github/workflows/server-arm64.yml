@@ -1,0 +1,51 @@
+name: Linux ARM64 server
+
+on:
+  push:
+    branches: ['feat/linux-arm64-server']
+  pull_request:
+    paths:
+      - 'PCRCalculatorServer/**'
+      - 'Assets/**'
+      - 'scripts/build_server.py'
+      - 'scripts/test_build_server.py'
+      - 'build.sh'
+      - '.github/workflows/server-arm64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arm64:
+    name: Build and smoke-check linux-arm64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run packaging unit tests
+        run: python3 scripts/test_build_server.py
+      - name: Publish ARM64 server
+        run: ./build.sh --target linux-arm64
+      - name: Check ELF architecture and bundled resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary=Builds/LinuxARM64/publish/PCRCalculatorServer
+          test -s "$binary"
+          file "$binary"
+          file "$binary" | grep -Eq 'ARM aarch64|ARM64|aarch64'
+          test -s Builds/mzq-linux-arm64.zip
+          test -f Builds/LinuxARM64/publish/classdata.tpk
+          test -d Builds/LinuxARM64/publish/Data/StreamingAssets
+          unzip -t Builds/mzq-linux-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PCRCalculatorServer_linux-arm64
+          path: Builds/mzq-linux-arm64.zip
+          if-no-files-found: error
