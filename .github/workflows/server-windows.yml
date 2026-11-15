@@ -1,0 +1,58 @@
+name: Windows server
+
+on:
+  push:
+    branches: ['feat/linux-arm64-server']
+    paths:
+      - '.github/workflows/server-windows.yml'
+      - 'PCRCalculatorServer/**'
+      - 'Assets/Scrips/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Build Windows x64 server
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish Windows server
+        shell: pwsh
+        run: |
+          dotnet publish PCRCalculatorServer/PCRCalculatorServer.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None -o Builds/WindowsServer/server
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify and package companion server
+        shell: pwsh
+        run: |
+          $required = @(
+            'PCRCalculatorServer.exe',
+            'classdata.tpk',
+            'Data/StreamingAssets/dbdiff.sql',
+            'Models/Arena/manifest.json',
+            'Models/Arena/encoder.onnx',
+            'Models/Arena/decoder.onnx',
+            'Models/Arena/critic.onnx'
+          )
+          foreach ($file in $required) {
+            if (!(Test-Path -LiteralPath "Builds/WindowsServer/server/$file" -PathType Leaf)) {
+              throw "Required runtime file missing: $file"
+            }
+          }
+          Compress-Archive -Path Builds/WindowsServer/server `
+            -DestinationPath Builds/PCRCalculator-server-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PCRCalculatorServer_win-x64_${{ github.sha }}
+          path: Builds/PCRCalculator-server-win-x64.zip
+          if-no-files-found: error
